@@ -1,15 +1,6 @@
 use starknet:: ContractAddress;
+use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
-#[derive(Copy, Drop, starknet::Store, Serde)]
-struct IERC20Dispatcher {
-    pub contract_address: starknet::ContractAddress,
-}
-
-#[derive(Drop, Serde, Copy)]
-struct TransferRequest {
-    recipient: ContractAddress,
-    amount: u256,
-}
 
 #[starknet::interface]
 pub trait IBettingContract<TContractState> {
@@ -22,9 +13,15 @@ pub trait IBettingContract<TContractState> {
 
 #[starknet::contract]
 mod BettingContract {
-    use super::{IERC20Dispatcher};
+    use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
+
+    #[derive(Drop, Serde, Copy)]
+    struct TransferRequest {
+    recipient: ContractAddress,
+    amount: u256,
+}
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -68,7 +65,7 @@ mod BettingContract {
         fn place_bet(ref self: ContractState, user: ContractAddress, bet_amount: u256, token_address: ContractAddress){
         
             let current_pool = self.prize_pool.read();
-            self.prize_pool.write(current_pool + bet_amount); // when user bets
+            self.prize_pool.write(current_pool + bet_amount);
 
             //when user bets, transfer bet amount from user wallet to contract
             let erc20_dispatcher = IERC20Dispatcher {contract_address: token_address};
@@ -80,13 +77,11 @@ mod BettingContract {
         }
 
         fn claim_winnings(ref self: ContractState, user: ContractAddress, token_address: ContractAddress){
+            let balance = self.user_balances.read(user);
 
             // when claims the prize, transfer from contract to user wallet
             let erc20_dispatcher = IERC20Dispatcher {contract_address: token_address};
-            erc20_dispatcher.transfer(recipient, amount);
-
-         
-         
+            erc20_dispatcher.transfer(token_address, balance);
 
             self.user_balances.write(get_caller_address(), 0.into());
         }
