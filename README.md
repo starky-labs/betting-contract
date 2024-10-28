@@ -1,5 +1,11 @@
 # Starknet Betting Contract
 
+## Deployment
+The contract is currently deployed on Starknet Sepolia testnet:
+
+- **Contract Address:** `0x025b695630d364467d529d338551726633c34906192f68f773d2c160e5f6be72`
+- **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x025b695630d364467d529d338551726633c34906192f68f773d2c160e5f6be72#overview)
+
 ## Overview
 A smart contract built on Starknet that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points.
 
