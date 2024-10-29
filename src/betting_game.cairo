@@ -10,7 +10,6 @@ pub trait IBettingContract<TContractState> {
     fn transfer_prize(ref self: TContractState, user: ContractAddress);
     fn approve_betting_amount(ref self: TContractState, amount: u256) -> bool;
     fn get_remaining_allowance(self: @TContractState) -> u256;
-    fn get_backend_address(self: @TContractState) -> ContractAddress;
 }
 
 #[starknet::contract]
@@ -79,11 +78,7 @@ mod BettingContract {
 
     #[abi(embed_v0)]
     impl BettingContract of super::IBettingContract<ContractState> {
-
-        fn get_backend_address(self: @ContractState) -> ContractAddress {
-            self.backend_address.read()
-        }
-
+        
         fn approve_betting_amount(ref self: ContractState, amount: u256) -> bool {
             let eth_dispatcher = IERC20Dispatcher { 
                 contract_address: ETH_ADDRESS.try_into().unwrap() 
