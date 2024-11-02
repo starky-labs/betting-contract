@@ -7,15 +7,27 @@ The contract is currently deployed on Starknet Sepolia testnet:
 - **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x044a14b61a797d551094d2c430b89391d7b83bd24bbd17ca0de39be9979e1510#overview)
 
 ## Overview
-A smart contract built on Starknet that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points.
+A smart contract built on Starknet that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points. It includes a backend authorization system for secure prize distribution.
 
 ## Features
 - **ETH Prize Pool**: Automatically tracks and updates the total prize pool based on the contract's ETH (ERC20) balance
 - **User Points System**: Rewards bettors with points for participation
 - **Real-time Balance Tracking**: Maintains accurate prize pool records by syncing with actual contract ETH balance
-- **Event Emission**: Emits events for bet placement and points earned
+- **Backend Authorization**: Secure system for prize distribution controlled by authorized backend
+- **Betting Approval System**: Users can pre-approve betting amounts for seamless transactions
+- **Event Emission**: Emits events for bet placement, prize transfers, and betting approvals
 
 ## Key Functions
+
+### `approve_betting_amount`
+- Allows users to approve the contract to spend their ETH
+- Takes approval amount as input
+- Returns boolean indicating approval success
+- Emits a `BettingApproved` event
+
+### `get_remaining_allowance`
+- Returns the remaining ETH allowance for the caller
+- Helps users track their available betting limit
 
 ### `get_prize_pool`
 - Returns the current prize pool amount
@@ -26,6 +38,12 @@ A smart contract built on Starknet that implements a betting system with an ETH 
 - Retrieves the total points accumulated by a specific user
 - Takes user's address as input
 - Returns the user's current point balance
+
+### `transfer_prize`
+- Backend-only function for distributing prizes
+- Transfers the entire prize pool to the specified user
+- Requires backend authorization
+- Emits a `PrizeTransferred` event
 
 ### `place_bet`
 - Allows users to place bets using ETH
@@ -38,17 +56,21 @@ A smart contract built on Starknet that implements a betting system with an ETH 
 - Built on Starknet using Cairo
 - Integrates with OpenZeppelin's ERC20 interface
 - Uses efficient storage management through Starknet's storage mapping
+- Implements backend authorization system
 - Implements event system for transaction tracking
 
 ## Prerequisites
 - Requires ETH approval for contract interactions
 - Users must have sufficient ETH balance for betting
 - Compatible with Starknet-supported wallets
+- Backend address must be set during contract deployment
 
 ## Security Considerations
+- Only authorized backend can transfer prizes
 - Users should approve the contract for ETH transfers before placing bets
 - Minimum bet amount must be greater than 0
 - Contract balance is automatically synced to prevent discrepancies
+Allowance checking prevents unauthorized transfers
 
 ## Events
 ### BetPlaced
@@ -56,9 +78,27 @@ Emitted when a bet is successfully placed, containing:
 - User address
 - Bet amount
 - Points earned
+- Remaining allowance
+
+### BettingApproved
+Emitted when a user approves betting amount:
+- User address
+- Approved amount
+
+### PrizeTransferred
+Emitted when a prize is transferred:
+- User address (recipient)
+- Amount transferred
+- Timestamp
 
 ## Usage Example
 ```rust
+// To approve betting amount
+contract.approve_betting_amount(amount);
+
+// To check remaining allowance
+let allowance = contract.get_remaining_allowance();
+
 // To place a bet
 contract.place_bet(user_address, bet_amount);
 
@@ -67,4 +107,8 @@ let current_pool = contract.get_prize_pool();
 
 // To check user points
 let user_points = contract.get_user_points(user_address);
+
+// To transfer prize (backend only)
+contract.transfer_prize(winner_address);
 ```
+
