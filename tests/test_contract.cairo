@@ -1,10 +1,7 @@
 
 #[cfg(test)]
 mod tests {
-    use core::traits::Into;
-    use super::{BettingContract, IBettingContract};
-    use super::IBettingContractDispatcher;
-    use super::IBettingContractDispatcherTrait;
+    use super::{BettingContract, IBettingContract, IBettingContractDispatcher};
     use starknet::{SyscallResultTrait, syscalls::deploy_syscall};
    
     use starknet::{
@@ -118,4 +115,10 @@ mod tests {
         let allowance = dispatcher.get_remaining_allowance();
         assert(allowance == 1000_u256, 'Incorrect allowance');
     }
+    #[test]
+    #[available_gas(150000)]
+    fn test_deploy_gas() {
+        deploy(10);
+    }
+
 }

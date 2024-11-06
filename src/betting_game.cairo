@@ -4,7 +4,7 @@ use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTra
 
 #[starknet::interface]
 pub trait IBettingContract<TContractState> {
-    fn get_prize_pool(ref self: TContractState) -> u256;
+    fn get_prize_pool(self: @TContractState) -> u256;
     fn get_user_points(self: @TContractState, user: ContractAddress) -> u256;
     fn place_bet(ref self: TContractState, user: ContractAddress, bet_amount: u256);
     fn transfer_prize(ref self: TContractState, user: ContractAddress);
@@ -98,18 +98,11 @@ mod BettingContract {
             let eth_dispatcher = IERC20Dispatcher { 
                 contract_address: ETH_ADDRESS.try_into().unwrap() 
             };
-            
             eth_dispatcher.allowance(get_caller_address(), get_contract_address())
         }
 
-        fn get_prize_pool(ref self: ContractState) -> u256 {
-            let eth_dispatcher = IERC20Dispatcher { 
-                contract_address: ETH_ADDRESS.try_into().unwrap() 
-            };
-            let current_balance = eth_dispatcher.balance_of(get_contract_address());
-
-            self.prize_pool.write(current_balance);
-            current_balance
+        fn get_prize_pool(self: @ContractState) -> u256 {
+          self.prize_pool.read()
         }
 
 
@@ -143,7 +136,8 @@ mod BettingContract {
             assert(bet_amount > 0_u256, 'Bet amount must be > 0');
 
             let caller_balance = eth_dispatcher.balance_of(get_caller_address());
-            assert(caller_balance >= bet_amount, 'Insufficient balance');
+            println!("{}", caller_balance);
+            assert(caller_balance.low > bet_amount.low, 'Insufficient balance');
 
             // Check if contract has sufficient allowance
             let contract_address = get_contract_address();
