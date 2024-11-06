@@ -1,124 +1,151 @@
 
-#[cfg(test)]
-mod tests {
-    use super::{BettingContract, IBettingContract, IBettingContractDispatcher};
+    use betting_game::betting_game::{BettingContract, IBettingContract, IBettingContractDispatcher, IBettingContractDispatcherTrait};
     use starknet::{SyscallResultTrait, syscalls::deploy_syscall};
+    use snforge_std::{declare, cheat_caller_address, CheatSpan, ContractClassTrait, DeclareResultTrait};
    
     use starknet::{
         ContractAddress,
-        get_contract_address,
         contract_address_const,
-        get_block_timestamp,
-        set_block_timestamp,
-        get_caller_address,
         testing::set_contract_address,
         testing::set_caller_address
     };
 
     use openzeppelin_token::erc20::interface::{IERC20, IERC20Dispatcher, IERC20DispatcherTrait};
 
-    // Mock ERC20 contract
+    //mock erc20
+    #[starknet::interface]
+    trait IFreeMint<T> {
+        fn mint(ref self: T, recipient: ContractAddress, amount: u256);
+    }
+
     #[starknet::contract]
-    mod MockERC20 {
+    mod FreeMintERC20 {
+        use openzeppelin_token::erc20::ERC20Component;
+        use openzeppelin_token::erc20::ERC20HooksEmptyImpl;
         use starknet::ContractAddress;
-        use starknet::storage::Map;
+        use super::IFreeMint;
+
+        component!(path: ERC20Component, storage: erc20, event: ERC20Event);
+
+        #[abi(embed_v0)]
+        impl ERC20Impl = ERC20Component::ERC20Impl<ContractState>;
+        #[abi(embed_v0)]
+        impl ERC20MetadataImpl = ERC20Component::ERC20MetadataImpl<ContractState>;
+        #[abi(embed_v0)]
+        impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
+        impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
 
         #[storage]
         struct Storage {
-            balances: Map::<ContractAddress, u256>,
-            allowances: Map::<(ContractAddress, ContractAddress), u256>,
+            #[substorage(v0)]
+            erc20: ERC20Component::Storage
         }
 
-        #[external(v0)]
-        impl IERC20 of super::IERC20<ContractState> {
-            fn transfer(ref self: ContractState, recipient: ContractAddress, amount: u256) -> bool {
-                true
-            }
-            fn transfer_from(
-                ref self: ContractState, sender: ContractAddress, recipient: ContractAddress, amount: u256
-            ) -> bool {
-                true
-            }
-            fn approve(ref self: ContractState, spender: ContractAddress, amount: u256) -> bool {
-                true
-            }
-            fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
-                1000_u256
-            }
-            fn allowance(
-                self: @ContractState, owner: ContractAddress, spender: ContractAddress
-            ) -> u256 {
-                1000_u256
+        #[event]
+        #[derive(Drop, starknet::Event)]
+        enum Event {
+            #[flat]
+            ERC20Event: ERC20Component::Event
+        }
+
+        #[constructor]
+        fn constructor(
+            ref self: ContractState,
+            initial_supply: u256,
+            name: core::byte_array::ByteArray,
+            symbol: core::byte_array::ByteArray
+        ) {
+            self.erc20.initializer(name, symbol);
+        }
+
+        #[abi(embed_v0)]
+        impl ImplFreeMint of IFreeMint<ContractState> {
+            fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256) {
+                self.erc20.mint(recipient, amount);
             }
         }
     }
 
-    fn setup() -> (ContractAddress, ContractAddress, ContractAddress, BettingContract::ContractState) {
+    fn deploy_erc20() -> ContractAddress {
+        let contract = declare("FreeMintERC20").unwrap().contract_class();
+        let initial_supply: u256 = 10_000_000_000_u256;
+        let name: ByteArray = "DummyERC20";
+        let symbol: ByteArray = "DUMMY";
+    
+        let mut calldata: Array<felt252> = array![];
+        initial_supply.serialize(ref calldata);
+        name.serialize(ref calldata);
+        symbol.serialize(ref calldata);
+        let (erc20_address, _) = contract.deploy(@calldata).unwrap();
+        erc20_address
+    }
+
+    fn setup() -> (ContractAddress, ContractAddress, ContractAddress, IBettingContractDispatcher) {
         let admin = contract_address_const::<1>();
         let user = contract_address_const::<2>();
         let contract = contract_address_const::<3>();
-        
-        set_contract_address(contract);
 
-        // Deploy contract
-        let mut calldata = array![admin.into()];
-        let (contract_address, _) = deploy_syscall(
-            BettingContract::TEST_CLASS_HASH.try_into().unwrap(),
-            0,
-            calldata.span(),
-            false
-        ).unwrap();
+        //deploy erc20 contract
+        let erc20_address = deploy_erc20();
+
+
+        
+        // Deploy contract passing erc20
+        let mut calldata = array![admin.into(), erc20_address.into()];
+        let contract = declare("BettingContract").unwrap().contract_class();
+
+        let (contract_address, _) = contract.deploy(@calldata).unwrap();
+
+        IFreeMintDispatcher { contract_address:erc20_address}.mint(user,2000);
 
         let dispatcher = IBettingContractDispatcher { contract_address };
         
-        (admin, user, contract, betting_contract)
+        (admin, user, contract_address, dispatcher)
     }
 
     #[test]
     #[should_panic]
     fn test_transfer_prize_unauthorized() {
-        let (admin, user, contract, mut betting_contract) = setup();
-        set_caller_address(user);
+        let (admin, user, contract_address, mut betting_contract) = setup();
+        cheat_caller_address(contract_address,user, CheatSpan::TargetCalls(1));
         
-        contract_dispatcher.transfer_prize(user);
+        betting_contract.transfer_prize(user);
     }
 
     #[test]
     #[should_panic]
     fn test_place_zero_bet() {
-        let (admin, user, contract, mut betting_contract) = setup();
+        let (admin, user, _, mut betting_contract) = setup();
         
-        contract_dispatcher.place_bet(user, 0_u256);
+        betting_contract.place_bet(0_u256)
     }
 
     #[test]
     fn test_sucessuful_bet() {
         let (admin, user, contract, mut betting_contract) = setup();
     // Place bet and verify points
-    dispatcher.place_bet(user, 100_u256);
-    let points = dispatcher.get_user_points(user);
+    cheat_caller_address(contract,user, CheatSpan::TargetCalls(1));
+    betting_contract.place_bet(100_u256);
+    
+    let points = betting_contract.get_user_points(user);
     assert(points == 50_u256, 'Points not awarded correctly');
 
     // Verify prize pool updated
-    let prize_pool = dispatcher.get_prize_pool();
-    assert(prize_pool == 1000_u256, 'Prize pool not updated');
+    let prize_pool = betting_contract.get_prize_pool();
+    assert(prize_pool == 100_u256 ,'Prize pool not updated');
     }
 
     #[test]
     fn test_approve_betting_amount() {
         let (admin, user, contract_address, dispatcher) = setup();
         
-        set_caller_address(user);
+        cheat_caller_address(contract_address,user, CheatSpan::TargetCalls(2));
         let result = dispatcher.approve_betting_amount(500_u256);
         assert(result == true, 'Approval failed');
         
         let allowance = dispatcher.get_remaining_allowance();
         assert(allowance == 1000_u256, 'Incorrect allowance');
     }
-    #[test]
-    #[available_gas(150000)]
-    fn test_deploy_gas() {
-        deploy(10);
-    }
+  
+  
 
-}

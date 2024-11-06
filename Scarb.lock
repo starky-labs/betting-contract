@@ -2,6 +2,14 @@
 version = 1
 
 [[package]]
+name = "betting_game"
+version = "0.1.0"
+dependencies = [
+ "openzeppelin_token",
+ "snforge_std",
+]
+
+[[package]]
 name = "openzeppelin_account"
 version = "0.18.0"
 source = "registry+https://scarbs.xyz/"
@@ -45,12 +53,4 @@ version = "0.32.0"
 source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.32.0#3817c903b640201c72e743b9bbe70a97149828a2"
 dependencies = [
  "snforge_scarb_plugin",
-]
-
-[[package]]
-name = "test"
-version = "0.1.0"
-dependencies = [
- "openzeppelin_token",
- "snforge_std",
 ]

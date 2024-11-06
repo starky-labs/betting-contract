@@ -1,1 +1,2 @@
-mod betting_game;
+pub mod betting_game;
+
