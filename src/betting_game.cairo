@@ -7,7 +7,6 @@ pub trait IBettingContract<TContractState> {
     fn get_user_points(self: @TContractState, user: ContractAddress) -> u256;
     fn place_bet(ref self: TContractState, bet_amount: u256);
     fn transfer_prize(ref self: TContractState, user: ContractAddress);
-    fn approve_betting_amount(ref self: TContractState, amount: u256) -> bool;
     fn get_remaining_allowance(self: @TContractState, user:ContractAddress) -> u256;
 }
 
@@ -79,22 +78,6 @@ pub mod BettingContract {
 
     #[abi(embed_v0)]
     impl BettingContract of super::IBettingContract<ContractState> {
-        
-        fn approve_betting_amount(ref self: ContractState, amount: u256) -> bool {
-            let eth_dispatcher = IERC20Dispatcher { 
-                contract_address: self.currency.read()
-            };
-            
-            let approve = eth_dispatcher.approve(get_contract_address(), amount);
-            
-            self.emit(BettingApproved { 
-                user: get_caller_address(),
-                amount
-            });
-            
-            approve
-        }
-
         fn get_remaining_allowance(self: @ContractState, user:ContractAddress) -> u256 {
             let eth_dispatcher = IERC20Dispatcher { 
                 contract_address: self.currency.read()

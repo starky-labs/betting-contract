@@ -98,6 +98,9 @@
 
         IFreeMintDispatcher { contract_address:erc20_address}.mint(user,2000);
 
+        cheat_caller_address(erc20_address, user, CheatSpan::TargetCalls(1));
+        IERC20Dispatcher {contract_address:erc20_address}.approve(contract_address, 2000 );
+
         let dispatcher = IBettingContractDispatcher { contract_address };
         
         (admin, user, contract_address, dispatcher)
@@ -135,17 +138,6 @@
     assert(prize_pool == 100_u256 ,'Prize pool not updated');
     }
 
-    #[test]
-    fn test_approve_betting_amount() {
-        let (admin, user, contract_address, dispatcher) = setup();
-        
-        cheat_caller_address(contract_address,user, CheatSpan::TargetCalls(2));
-        let result = dispatcher.approve_betting_amount(500_u256);
-        assert(result == true, 'Approval failed');
-        
-        let allowance = dispatcher.get_remaining_allowance();
-        assert(allowance == 1000_u256, 'Incorrect allowance');
-    }
   
   
 
