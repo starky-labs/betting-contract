@@ -1,5 +1,4 @@
 use starknet:: ContractAddress;
-//use cairo::common::uint256_lt;  
 
 #[starknet::interface]
 pub trait IBettingContract<TContractState> {
@@ -120,7 +119,7 @@ pub mod BettingContract {
             assert(bet_amount > 0_u256, 'Bet amount must be > 0');
 
             let caller_balance = eth_dispatcher.balance_of(get_caller_address());
-            println!("{}", caller_balance);
+        
             assert(caller_balance > bet_amount, 'Insufficient balance');
 
             // Check if contract has sufficient allowance
