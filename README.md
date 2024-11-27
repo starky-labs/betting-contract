@@ -23,10 +23,6 @@ A smart contract built on Starknet using Cairo language that implements a bettin
 - Returns boolean indicating approval success
 - Emits a `BettingApproved` event
 
-### `get_remaining_allowance`
-- Returns the remaining ETH allowance for the caller
-- Helps users track their available betting limit
-
 ### `get_prize_pool`
 - Returns the current prize pool amount
 - Automatically syncs the stored prize pool with the contract's actual ETH balance
