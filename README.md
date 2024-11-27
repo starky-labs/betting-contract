@@ -94,9 +94,6 @@ Emitted when a prize is transferred:
 // To approve betting amount
 contract.approve_betting_amount(amount);
 
-// To check remaining allowance
-let allowance = contract.get_remaining_allowance();
-
 // To place a bet
 contract.place_bet(user_address, bet_amount);
 
