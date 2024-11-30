@@ -110,10 +110,8 @@ pub mod BettingContract {
             assert(bet_amount > 0_u256, 'Bet amount must be > 0');
 
             let caller_balance = eth_dispatcher.balance_of(get_caller_address());
-        
             assert(caller_balance > bet_amount, 'Insufficient balance');
 
-            // Check if contract has sufficient allowance
             let contract_address = get_contract_address();
             let caller_address = get_caller_address();
 
