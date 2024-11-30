@@ -2,11 +2,11 @@
 
 ## Deployment
 The contract is currently deployed on Starknet Sepolia testnet:
-- **Contract Address:** `0x04292f570b3da49ff94e751d8d4df99485f0f3f5f8c26c473ec78d15118dda1e`
-- **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x4292f570b3da49ff94e751d8d4df99485f0f3f5f8c26c473ec78d15118dda1e#overview)
+- **Contract Address:** `0x06c2c7dceeeb27c00df8472994eec5c88e35aba3b641b941b8fd9dfdda2bc6e2`
+- **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x6c2c7dceeeb27c00df8472994eec5c88e35aba3b641b941b8fd9dfdda2bc6e2#read-write-contract)
 
 ## Overview
-A smart contract built on Starknet that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points. It includes a backend authorization system for secure prize distribution.
+A smart contract built on Starknet using Cairo language that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points. It includes a backend authorization system for secure prize distribution.
 
 ## Features
 - **Prize Pool**: Automatically tracks and updates the total prize pool based on the contract's ETH (ERC20) balance
@@ -22,10 +22,6 @@ A smart contract built on Starknet that implements a betting system with an ETH 
 - Takes approval amount as input
 - Returns boolean indicating approval success
 - Emits a `BettingApproved` event
-
-### `get_remaining_allowance`
-- Returns the remaining ETH allowance for the caller
-- Helps users track their available betting limit
 
 ### `get_prize_pool`
 - Returns the current prize pool amount
@@ -93,9 +89,6 @@ Emitted when a prize is transferred:
 ```rust
 // To approve betting amount
 contract.approve_betting_amount(amount);
-
-// To check remaining allowance
-let allowance = contract.get_remaining_allowance();
 
 // To place a bet
 contract.place_bet(user_address, bet_amount);
