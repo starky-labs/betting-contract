@@ -6,7 +6,6 @@ pub trait IBettingContract<TContractState> {
     fn get_user_points(self: @TContractState, user: ContractAddress) -> u256;
     fn place_bet(ref self: TContractState, bet_amount: u256);
     fn transfer_prize(ref self: TContractState, user: ContractAddress);
-    fn get_remaining_allowance(self: @TContractState, user:ContractAddress) -> u256;
 }
 
 #[starknet::contract]
@@ -14,8 +13,6 @@ pub mod BettingContract {
     use openzeppelin_token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
-
-    const ETH_ADDRESS: felt252 = 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7;
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -77,12 +74,6 @@ pub mod BettingContract {
 
     #[abi(embed_v0)]
     impl BettingContract of super::IBettingContract<ContractState> {
-        fn get_remaining_allowance(self: @ContractState, user:ContractAddress) -> u256 {
-            let eth_dispatcher = IERC20Dispatcher { 
-                contract_address: self.currency.read()
-            };
-            eth_dispatcher.allowance(user, get_contract_address())
-        }
 
         fn get_prize_pool(self: @ContractState) -> u256 {
           self.prize_pool.read()
@@ -125,8 +116,6 @@ pub mod BettingContract {
             // Check if contract has sufficient allowance
             let contract_address = get_contract_address();
             let caller_address = get_caller_address();
-            let allowance = eth_dispatcher.allowance(caller_address, contract_address);
-            assert(allowance >= bet_amount, 'Insufficient allowance');
 
             eth_dispatcher.transfer_from(caller_address, contract_address, bet_amount );
 
