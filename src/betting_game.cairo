@@ -18,7 +18,6 @@ pub mod BettingContract {
     #[derive(Drop, starknet::Event)]
     enum Event {
         BetPlaced: BetPlaced,
-        BettingApproved: BettingApproved,
         PrizeTransferred: PrizeTransferred
     }
 
@@ -26,14 +25,7 @@ pub mod BettingContract {
     struct BetPlaced {
         user: ContractAddress,
         amount: u256,
-        points_earned: u256,
-        remaining_allowance: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct BettingApproved {
-        user: ContractAddress,
-        amount: u256,
+        points_earned: u256
     }
 
     #[derive(Drop, starknet::Event)]
@@ -124,16 +116,11 @@ pub mod BettingContract {
             let current_points = self.user_points.read(caller_address);
             self.user_points.write(caller_address, current_points + points_to_add);
 
-            // Get updated allowance after bet
-            let remaining_allowance = eth_dispatcher.allowance(caller_address, contract_address);
-
             self.emit(BetPlaced { 
                 user:caller_address,
                 amount: bet_amount,
-                points_earned: points_to_add,
-                remaining_allowance
+                points_earned: points_to_add
             });
-
         }
         
     }
