@@ -5,7 +5,7 @@ pub trait IBettingContract<TContractState> {
     fn get_prize_pool(self: @TContractState) -> u256;
     fn get_user_points(self: @TContractState, user: ContractAddress) -> u256;
     fn place_bet(ref self: TContractState, bet_amount: u256);
-    fn transfer_prize(ref self: TContractState, user: ContractAddress);
+    fn transfer_prize(ref self: TContractState, user: ContractAddress, tx_hash: felt252);
 }
 
 #[starknet::contract]
@@ -33,6 +33,7 @@ pub mod BettingContract {
         user: ContractAddress,
         amount: u256,
         timestamp: u64,
+        tx_hash: felt252
     }
 
     #[storage]
@@ -76,7 +77,7 @@ pub mod BettingContract {
             self.user_points.read(user)
         }
 
-        fn transfer_prize(ref self: ContractState, user: ContractAddress) {
+        fn transfer_prize(ref self: ContractState, user: ContractAddress, tx_hash: felt252) {
             InternalFunctions::assert_only_backend(@self);
 
             let eth_dispatcher = IERC20Dispatcher { 
@@ -90,7 +91,8 @@ pub mod BettingContract {
             self.emit(PrizeTransferred { 
                 user,
                 amount: prize_pool,
-                timestamp: starknet::get_block_timestamp()
+                timestamp: starknet::get_block_timestamp(),
+                tx_hash
             });
         }
 
@@ -101,12 +103,12 @@ pub mod BettingContract {
 
             assert(bet_amount > 0_u256, 'Bet amount must be > 0');
 
-            let caller_balance = eth_dispatcher.balance_of(get_caller_address());
+            let caller_address = get_caller_address();
+            let caller_balance = eth_dispatcher.balance_of(caller_address);
+           
             assert(caller_balance > bet_amount, 'Insufficient balance');
 
             let contract_address = get_contract_address();
-            let caller_address = get_caller_address();
-
             eth_dispatcher.transfer_from(caller_address, contract_address, bet_amount );
 
             let current_balance = eth_dispatcher.balance_of(contract_address);
