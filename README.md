@@ -2,8 +2,8 @@
 
 ## Deployment
 The contract is currently deployed on Starknet Sepolia testnet:
-- **Contract Address:** `0x02c27b6caba176944a66319d051535b42e75df95179b3a6c9347533d04370088`
-- **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x2c27b6caba176944a66319d051535b42e75df95179b3a6c9347533d04370088)
+- **Contract Address:** `0x0767d132639c5c59b1a613960967fdbe6de3f00b898d6b778f47687ac8662f2c`
+- **View on Starkscan:** [Contract on Starkscan](https://sepolia.starkscan.co/contract/0x767d132639c5c59b1a613960967fdbe6de3f00b898d6b778f47687ac8662f2c)
 
 ## Overview
 A smart contract built on Starknet using Cairo language that implements a betting system with an ETH prize pool and a points reward mechanism. The contract allows users to place bets using ETH while maintaining an automated prize pool system and rewarding participants with points. It includes a backend authorization system for secure prize distribution.
