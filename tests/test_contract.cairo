@@ -111,8 +111,10 @@
     fn test_transfer_prize_unauthorized() {
         let (admin, user, contract_address, mut betting_contract) = setup();
         cheat_caller_address(contract_address,user, CheatSpan::TargetCalls(1));
+
+        let tx_hash: felt252 = 123;
         
-        betting_contract.transfer_prize(user);
+        betting_contract.transfer_prize(user, tx_hash);
     }
 
     #[test]
@@ -126,18 +128,72 @@
     #[test]
     fn test_sucessuful_bet() {
         let (admin, user, contract, mut betting_contract) = setup();
-    // Place bet and verify points
-    cheat_caller_address(contract,user, CheatSpan::TargetCalls(1));
-    betting_contract.place_bet(100_u256);
-    
-    let points = betting_contract.get_user_points(user);
-    assert(points == 50_u256, 'Points not awarded correctly');
+        // Place bet and verify points
+        cheat_caller_address(contract,user, CheatSpan::TargetCalls(1));
+        betting_contract.place_bet(100_u256);
+        
+        let points = betting_contract.get_user_points(user);
+        assert(points == 1_u256, 'Points not awarded correctly');
 
-    // Verify prize pool updated
-    let prize_pool = betting_contract.get_prize_pool();
-    assert(prize_pool == 100_u256 ,'Prize pool not updated');
+        // Verify prize pool updated
+        let prize_pool = betting_contract.get_prize_pool();
+        assert(prize_pool == 100_u256 ,'Prize pool not updated');
     }
 
+    #[test]
+    fn test_successful_prize_transfer() {
+        let (admin, user, contract_address, mut betting_contract) = setup();
+    
+        // Get the ERC20 address from the setup
+        let erc20_address = deploy_erc20();
+        
+        let initial_balance = IERC20Dispatcher { contract_address: erc20_address }.balance_of(user);
+        
+        // Place a bet to have something in the prize pool
+        cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
+        let bet_amount: u256 = 100_u256;
+        betting_contract.place_bet(bet_amount);
+    
+        // Verify initial prize pool
+        let initial_prize_pool = betting_contract.get_prize_pool();
+        assert(initial_prize_pool == bet_amount, 'Initial prize pool incorrect');
+        
+        // Transfer the prize as admin/backend
+        cheat_caller_address(contract_address, admin, CheatSpan::TargetCalls(1));
+        let tx_hash: felt252 = 123;
+        betting_contract.transfer_prize(user, tx_hash);
+    
+        let final_prize_pool = betting_contract.get_prize_pool();
+        assert(final_prize_pool == 0_u256, 'Prize pool should be empty');
+        
+        // Verify user received the funds
+        let eth_dispatcher = IERC20Dispatcher { contract_address: erc20_address };
+        let final_balance = eth_dispatcher.balance_of(user);
+        
+        // Final balance should be: initial balance (2000) - bet amount (100) + prize amount (100)
+        // In this case, it should equal the initial balance since we're getting back what we bet
+        assert(final_balance == initial_balance, 'User should have received prize');
+    }
+
+    #[test]
+    #[should_panic(expected: ('No prize available',))]
+    fn test_transfer_prize_empty_pool() {
+        let (admin, user, contract_address, mut betting_contract) = setup();
+        
+        // Try to transfer prize when pool is empty
+        cheat_caller_address(contract_address, admin, CheatSpan::TargetCalls(1));
+        let tx_hash: felt252 = 123;
+        betting_contract.transfer_prize(user, tx_hash);
+    }
+
+    #[test]
+    #[should_panic(expected: ('Insufficient balance',))]
+    fn test_place_bet_insufficient_balance() {
+        let (admin, user, contract_address, mut betting_contract) = setup();
+        
+        cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
+        betting_contract.place_bet(3000_u256); 
+    }
   
   
 

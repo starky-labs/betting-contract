@@ -88,6 +88,8 @@ pub mod BettingContract {
             assert(prize_pool > 0_u256, 'No prize available');
             eth_dispatcher.transfer(user, prize_pool);
 
+            self.prize_pool.write(0_u256);
+
             self.emit(PrizeTransferred { 
                 user,
                 amount: prize_pool,
@@ -114,7 +116,7 @@ pub mod BettingContract {
             let current_balance = eth_dispatcher.balance_of(contract_address);
             self.prize_pool.write(current_balance);
 
-            let points_to_add: u256 = 50.into();
+            let points_to_add: u256 = 1.into();
             let current_points = self.user_points.read(caller_address);
             self.user_points.write(caller_address, current_points + points_to_add);
 
