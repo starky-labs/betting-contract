@@ -6,6 +6,8 @@ pub trait IBettingContract<TContractState> {
     fn get_user_points(self: @TContractState, user: ContractAddress) -> u256;
     fn place_bet(ref self: TContractState, bet_amount: u256);
     fn transfer_prize(ref self: TContractState, user: ContractAddress, tx_hash: felt252);
+    fn currency(self: @TContractState) -> ContractAddress;
+
 }
 
 #[starknet::contract]
@@ -44,6 +46,8 @@ pub mod BettingContract {
         currency:ContractAddress
     }
 
+    // TODO: add a second account to get the plataform fee with 3% of the bet amount
+
     #[constructor]
     fn constructor(ref self: ContractState,initial_backend_address: ContractAddress, currency: ContractAddress) {
         self.backend_address.write(initial_backend_address);
@@ -68,10 +72,13 @@ pub mod BettingContract {
     #[abi(embed_v0)]
     impl BettingContract of super::IBettingContract<ContractState> {
 
+        fn currency(self: @ContractState) -> ContractAddress {
+            self.currency.read()
+        }
+
         fn get_prize_pool(self: @ContractState) -> u256 {
           self.prize_pool.read()
         }
-
 
         fn get_user_points(self: @ContractState, user: ContractAddress) -> u256 {
             self.user_points.read(user)
@@ -86,13 +93,16 @@ pub mod BettingContract {
             
             let prize_pool = eth_dispatcher.balance_of(get_contract_address());
             assert(prize_pool > 0_u256, 'No prize available');
-            eth_dispatcher.transfer(user, prize_pool);
 
-            self.prize_pool.write(0_u256);
+            let transfer_amount = (prize_pool * 70_u256) / 100_u256;
+            eth_dispatcher.transfer(user, transfer_amount);
+
+            let remaining_amount = prize_pool - transfer_amount;
+            self.prize_pool.write(remaining_amount);
 
             self.emit(PrizeTransferred { 
                 user,
-                amount: prize_pool,
+                amount: transfer_amount,
                 timestamp: starknet::get_block_timestamp(),
                 tx_hash
             });
