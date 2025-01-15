@@ -43,7 +43,8 @@ pub mod BettingContract {
         prize_pool: u256,
         user_points: Map::<ContractAddress, u256>,
         backend_address: ContractAddress,
-        currency:ContractAddress
+        currency:ContractAddress,
+        required_bet_amount: u256
     }
 
     // TODO: add a second account to get the plataform fee with 3% of the bet amount
@@ -52,6 +53,7 @@ pub mod BettingContract {
     fn constructor(ref self: ContractState,initial_backend_address: ContractAddress, currency: ContractAddress) {
         self.backend_address.write(initial_backend_address);
         self.currency.write(currency);
+        self.required_bet_amount.write(2000000000000_u256);
 
         let eth_dispatcher = IERC20Dispatcher { 
             contract_address: currency 
@@ -113,12 +115,13 @@ pub mod BettingContract {
                 contract_address: self.currency.read() 
             };
 
-            assert(bet_amount > 0_u256, 'Bet amount must be > 0');
+            let required_amount = self.required_bet_amount.read();
+            assert(bet_amount == required_amount, 'Invalid bet amount');
 
             let caller_address = get_caller_address();
             let caller_balance = eth_dispatcher.balance_of(caller_address);
            
-            assert(caller_balance > bet_amount, 'Insufficient balance');
+            assert(caller_balance >= bet_amount, 'Insufficient balance');
 
             let contract_address = get_contract_address();
             eth_dispatcher.transfer_from(caller_address, contract_address, bet_amount );

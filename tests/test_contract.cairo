@@ -85,17 +85,14 @@
         let user = contract_address_const::<2>();
         let contract = contract_address_const::<3>();
 
-        //deploy erc20 contract
         let erc20_address = deploy_erc20();
-
-
         
        // Deploy betting contract passing erc20 address
         let mut calldata = array![admin.into(), erc20_address.into()];
         let contract = declare("BettingContract").unwrap().contract_class();
         let (contract_address, _) = contract.deploy(@calldata).unwrap();
 
-        let initial_amount: u256 = 2000_u256;
+        let initial_amount: u256 = 2000000000000_u256;
         IFreeMintDispatcher { contract_address: erc20_address }.mint(user, initial_amount);
 
         // Approve spending for the betting contract
@@ -120,10 +117,12 @@
 
     #[test]
     #[should_panic]
-    fn test_place_zero_bet() {
-        let (admin, user, _, mut betting_contract) = setup();
+    fn test_place_invalid_bet_amount() {
+        let (admin, user, contract_address, mut betting_contract) = setup();
+        cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
         
-        betting_contract.place_bet(0_u256)
+        // Try to place bet with wrong amount
+        betting_contract.place_bet(1000000000000_u256);
     }
 
     #[test]
@@ -132,22 +131,21 @@
 
         // Place bet and verify points
         cheat_caller_address(contract,user, CheatSpan::TargetCalls(1));
-        betting_contract.place_bet(100_u256);
+        betting_contract.place_bet(2000000000000_u256);
         
         let points = betting_contract.get_user_points(user);
         assert(points == 1_u256, 'Points not awarded correctly');
 
         // Verify prize pool updated
         let prize_pool = betting_contract.get_prize_pool();
-        assert(prize_pool == 100_u256 ,'Prize pool not updated');
+        assert(prize_pool == 2000000000000_u256,'Prize pool not updated');
     }
 
     #[test]
     fn test_successful_prize_transfer() {
         let (admin, user, contract_address, mut betting_contract) = setup();
 
-        // Place a bet
-        let bet_amount: u256 = 500_u256;
+        let bet_amount: u256 = 2000000000000_u256;
         
         // Get the ERC20 address that was stored in the betting contract
         let erc20_address = IERC20Dispatcher { contract_address: betting_contract.currency() }.contract_address;
@@ -158,7 +156,6 @@
         cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
         betting_contract.place_bet(bet_amount);
     
-        // Verify initial prize pool
         let initial_prize_pool = betting_contract.get_prize_pool();
         assert(initial_prize_pool == bet_amount, 'Initial prize pool incorrect');
         
@@ -167,7 +164,6 @@
         let tx_hash: felt252 = 123;
         betting_contract.transfer_prize(user, tx_hash);
     
-        // Check final prize pool (should be 30% of original)
         let final_prize_pool = betting_contract.get_prize_pool();
         let expected_remaining = (bet_amount * 30_u256) / 100_u256;
         assert(final_prize_pool == expected_remaining, 'Incorrect remaining prize pool');
@@ -189,7 +185,6 @@
     fn test_transfer_prize_empty_pool() {
         let (admin, user, contract_address, mut betting_contract) = setup();
         
-        // Try to transfer prize when pool is empty
         cheat_caller_address(contract_address, admin, CheatSpan::TargetCalls(1));
         let tx_hash: felt252 = 123;
         betting_contract.transfer_prize(user, tx_hash);
@@ -200,8 +195,15 @@
     fn test_place_bet_insufficient_balance() {
         let (admin, user, contract_address, mut betting_contract) = setup();
         
+        // Place a valid bet to reduce balance
         cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
-        betting_contract.place_bet(2500_u256); 
+        betting_contract.place_bet(2000000000000_u256);
+
+        // Try to place another bet when user doesn't have enough balance
+        cheat_caller_address(contract_address, user, CheatSpan::TargetCalls(1));
+        betting_contract.place_bet(2000000000000_u256);
+
+
     }
   
   
