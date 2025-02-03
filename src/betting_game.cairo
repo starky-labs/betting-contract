@@ -108,21 +108,22 @@ pub mod BettingContract {
 
         fn transfer_prize(ref self: ContractState, user: ContractAddress, tx_hash: felt252) {
             InternalFunctions::assert_only_backend(@self);
-
+        
             let prize_pool = self.prize_pool.read();
             assert(prize_pool > 0_u256, 'No prize available');
-
-            let transfer_amount = (prize_pool * 70_u256) / 100_u256;
-
+        
+            let transfer_amount = (prize_pool * 40_u256) / 100_u256;
+        
             let eth_dispatcher = IERC20Dispatcher { 
                 contract_address: self.currency.read()
             };
-
+        
+            // Transfer the prize amount
             eth_dispatcher.transfer(user, transfer_amount);
-
+        
             let remaining_amount = prize_pool - transfer_amount;
             self.prize_pool.write(remaining_amount);
-
+        
             self.emit(PrizeTransferred { 
                 user,
                 amount: transfer_amount,
